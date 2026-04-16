@@ -1,6 +1,6 @@
 The `1,000,000x` developer [Andrew Li](https://github.com/Andwerpz) has written the best operating system ever, [jank-os](https://github.com/Andwerpz/jank-os) which is built on the best programming language, [jank-pl](https://github.com/Andwerpz/jank-pl). After bailing out on the filesystem implementation, I have decided to work on networking for the OS. I will now loosely document what I remember doing to get networking somewhat working.
 # Groundwork
-Developing code for the operating system has been significantly improved since I last worked on it. This made my life very easy. Mr. Li has already implemented everything I needed to start on this networking driver. You can reference his writeup to see what he has done. TODO ADD MR LI HERE...
+Developing code for the operating system has been significantly improved since I last worked on it. This made my life very easy. Mr. Li has already implemented everything I needed to start on this networking driver. You can reference his writeup to see what he has done. [JankOS](https://andwerpz.github.io/html/blogs/jank_os/jank_os.html)
 
 For networking, I created some structs that will com in handy later.
 ```c
