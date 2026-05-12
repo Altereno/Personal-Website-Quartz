@@ -285,3 +285,37 @@ Start the daemon:
 ```bash
 sudo systemctl enable --now wings
 ```
+
+## Backups
+Because I don't want to setup S3 at home, I have opted in to using a local backup for Wings. This will back up servers into a local directory.
+
+On TrueNAS, I have:
+- Created the dataset for backups
+- Created the UID and GID for Pelican
+- Applied ACL rules to allow R/W on the dataset
+- Created a NFS share and added the Wings IP to the allow list
+- Under the NFS share advanced settings:
+	- Set the mapall user and group to the Pelican user (*Note below*)
+
+*Note: The mapall just sets all the clients user or group to the selected one, basically this just gives all of them the permissions of that selected user. I did this because I'm not too familiar with NFS and didn't want to sync the users and groups for the two machines. Also the IP whitelist should be plenty for internal usage.*
+
+On the Pelican Node machine:
+- Install `nfs-common`
+- Create the backups directory with `mkdir -p /mnt/backups`
+- Make the directory immutable with `chattr +i /mnt/backups` (*Note below*)
+- Append `10.0.10.2:/mnt/DataPool/PelicanBackups    /mnt/backups    nfs    defaults,hard,nofail,_netdev    0    0` to `/etc/fstab` (*Note below*)
+- Modify the `backup_directory` key in the `/etc/pelican/config.yml` to the new backups path
+- Restart Wings with `systemctl restart wings`
+
+*Note: Mounting creates an overlay over the directory its pointing to, and so if I make the local directory immutable, the backups should fail is the NFS volume isn't mounted*
+
+*Note: `hard` causes the client to wait indefinitely when the NFS mount goes down; `nofail` lets the OS know that it is ok to continue booting when this is not mounted on boot; `_netdev` tells the OS that it should only try to mount this after a network connection has been established *
+
+On the Pelican Web UI:
+- Under `Admin -> Settings -> Backup`:
+	- Set the `Backup Driver` to Wings
+- Under `Admin -> Servers -> Environment Configuration`:
+	- Under `Feature Limits`, set `Backups` above 0
+- Under the game server:
+	- Create a `Schedule` and save it
+	- Edit the `Schedule` and add the `Create Backup` task to it
