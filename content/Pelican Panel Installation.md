@@ -13,12 +13,12 @@ I am running Ubuntu 24.04 on a virtual machine.
 [Source](https://pelican.dev/docs/panel/getting-started)
 
 ### Dependencies
-Recommended version for `php` is 8.5, that is what I will install:
+Recommended version for `PHP` is 8.5, that is what I will install:
 ```bash
-sudo apt install php8.5-gd php8.5-mysql php8.5-mbstring php8.5-bcmath php8.5-xml php8.5-curl php8.5-zip php8.5-intl php8.5-sqlite3 php8.5-fpm
+sudo apt install PHP8.5-gd PHP8.5-mysql PHP8.5-mbstring PHP8.5-bcmath PHP8.5-xml PHP8.5-curl PHP8.5-zip PHP8.5-intl PHP8.5-sqlite3 PHP8.5-fpm
 ```
 
-*This will install `Apache2`, but I am using Nginx, so I just removed it:`
+*This will install `Apache2`, but I am using Nginx, so I just removed it:*
 ```bash
 sudo systemctl stop apache2
 sudo apt remove apache2*
@@ -46,11 +46,11 @@ Before setting up the webserver, I needed to get certificates for them.
 
 ### Certificates
 [Source](https://pelican.dev/docs/guides/ssl/)
-Previously on Pterodactyl, I had certificates set up with my Nginx Reverse Proxy. That was a little annoying since I had to create a post renewal script with LetsEncrypt to update the Wings certificate.
+Previously on Pterodactyl, I had certificates set up with my Nginx Reverse Proxy. That was a little annoying since I had to create a post renewal script with Let's Encrypt to update the Wings certificate.
 
-For Pelican, the plan is to have it all self contained.
+For Pelican, the plan is to have it all self-contained.
 
-To have certificates auto renew, I will use [Certbot](https://certbot.eff.org/). Since I am not going to expose this panel publically, I have to use the DNS challenge option. My current DNS provider is Cloudflare.
+To have certificates auto renew, I will use [Certbot](https://certbot.eff.org/). Since I am not going to expose this panel publicly, I have to use the DNS challenge option. My current DNS provider is Cloudflare.
 
 To install Certbot and the [Cloudflare plugin](https://certbot-dns-cloudflare.readthedocs.io/en/stable/):
 ```bash
@@ -119,7 +119,7 @@ touch /etc/nginx/conf.d/pelican.conf
 
 Configure this before copying to `pelican.conf`:
 - Replace `<domain>` with the panel domain, in my case: `pelican.stevenchen.one`
-- Check that `php8.5-fpm.sock` exists under `/run/php/`, otherwise change to match the socket 
+- Check that `PHP8.5-fpm.sock` exists under `/run/PHP/`, otherwise change to match the socket 
 ```nginx
 server_tokens off;
 
@@ -135,7 +135,7 @@ server {
     server_name <domain>;
 
     root /var/www/pelican/public;
-    index index.php;
+    index index.PHP;
 
     access_log /var/log/nginx/pelican.app-access.log;
     error_log  /var/log/nginx/pelican.app-error.log error;
@@ -163,13 +163,13 @@ server {
     add_header Referrer-Policy same-origin;
 
     location / {
-        try_files $uri $uri/ /index.php?$query_string;
+        try_files $uri $uri/ /index.PHP?$query_string;
     }
 
-    location ~ \.php$ {
-        fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass unix:/run/php/php8.5-fpm.sock;
-        fastcgi_index index.php;
+    location ~ \.PHP$ {
+        fastcgi_split_path_info ^(.+\.PHP)(/.+)$;
+        fastcgi_pass unix:/run/PHP/PHP8.5-fpm.sock;
+        fastcgi_index index.PHP;
         include fastcgi_params;
         fastcgi_param PHP_VALUE "upload_max_filesize = 100M \n post_max_size=100M";
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
@@ -210,7 +210,7 @@ APP_URL=https://pelican.stevenchen.one
 ```
 Also save the APP_KEY somewhere.
 
-Setup the environment: 
+Set up the environment: 
 ```bash
 sudo php artisan p:environment:setup
 ```
@@ -238,7 +238,7 @@ sudo php /var/www/pelican/artisan p:environment:queue-service --overwrite
 
 Add the cron job for schedules using `crontab -u www-data -e`:
 ```
-* * * * * php /var/www/pelican/artisan schedule:run >> /dev/null 2>&1
+* * * * * PHP /var/www/pelican/artisan schedule:run >> /dev/null 2>&1
 ```
 
 # Wings
@@ -256,7 +256,7 @@ sudo curl -L -o /usr/local/bin/wings "https://github.com/pelican-dev/wings/relea
 sudo chmod u+x /usr/local/bin/wings
 ```
 
-Create a node on the webui and paste the auto deploy script into the terminal. This should work if everything is configured correctly.
+Create a node on the web UI and paste the auto deploy script into the terminal. This should work if everything is configured correctly.
 
 Create the service in `/etc/systemd/system/wings.service`:
 ```
@@ -287,7 +287,7 @@ sudo systemctl enable --now wings
 ```
 
 ## Backups
-Because I don't want to setup S3 at home, I have opted in to using a local backup for Wings. This will back up servers into a local directory.
+Because I don't want to set up S3 at home, I have opted in to using a local backup for Wings. This will back up servers into a local directory.
 
 On TrueNAS, I have:
 - Created the dataset for backups
@@ -297,7 +297,7 @@ On TrueNAS, I have:
 - Under the NFS share advanced settings:
 	- Set the mapall user and group to the Pelican user (*Note below*)
 
-*Note: The mapall just sets all the clients user or group to the selected one, basically this just gives all of them the permissions of that selected user. I did this because I'm not too familiar with NFS and didn't want to sync the users and groups for the two machines. Also the IP whitelist should be plenty for internal usage.*
+*Note: The mapall just sets all the clients' user or group to the selected one, basically this just gives all of them the permissions of that selected user. I did this because I'm not too familiar with NFS and didn't want to sync the users and groups for the two machines. Also the IP whitelist should be plenty for internal usage.*
 
 On the Pelican Node machine:
 - Install `nfs-common`

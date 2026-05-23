@@ -75,7 +75,7 @@ kubectl apply -f http-route.yaml
 ```
 
 # Pipeline configuration
-Once the repository is enabled on the woodpecker web ui, it should create a webhook in Gitea. The default place it will check for pipeline configuration are:
+Once the repository is enabled on the woodpecker web UI, it should create a webhook in Gitea. The default places it checks for pipeline configuration are:
 - `.woodpecker/*.yaml`
 - .woodpecker.yaml
 *Note that `.yaml` and `.yml` both work*

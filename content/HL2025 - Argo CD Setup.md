@@ -144,7 +144,7 @@ spec:
       selfHeal: true
       prune: true
 ```
-This should automatically sync with the repository when I make changes. After applying this, the Argo CD web ui should show the application being deployed.
+This should automatically sync with the repository when I make changes. After applying this, the Argo CD web UI should show the application being deployed.
 
 To verify the initial deployment, I just visited the site I configured in the `HTTPRoute`.
 # Conclusion

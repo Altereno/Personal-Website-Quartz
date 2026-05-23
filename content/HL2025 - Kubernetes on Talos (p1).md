@@ -63,7 +63,7 @@ Here are some of the issues I ran into / some things I didn't like about my impl
 # Prerequisites
 To access everything remotely, I am using a M2 MacBook Air.
 Here is the list of binaries that I had to install.
-Since [Homebrew](https://brew.sh/) works on MacOS and Linux, I will use this to grab everything.
+Since [Homebrew](https://brew.sh/) works on macOS and Linux, I will use this to grab everything.
 List of packages to install:
 - [terraform](https://developer.hashicorp.com/terraform/install)
 - [kubernetes-cli](https://formulae.brew.sh/formula/kubernetes-cli#default)
@@ -206,12 +206,12 @@ variable "vm_datastore_id" {
 }
 
 variable "talos_version" {
-  description = "Version of Talos Linux being deploy, for naming purposes"
+  description = "Version of Talos Linux being deployed, for naming purposes"
   type        = string
 }
 
 variable "talos_image_url" {
-  description = "Download link of the image file, not iso of Talos Linux"
+  description = "Download link of the image file, not the ISO of Talos Linux"
   type        = string
 }
 
@@ -231,7 +231,7 @@ variable "dns_servers" {
 }
 
 variable "control_nodes" {
-  description = "Nummber of control nodes to create"
+  description = "Number of control nodes to create"
   type        = number
   default     = 0
 }
@@ -260,7 +260,7 @@ variable "control_nodes_ipv4_prefix" {
 }
 
 variable "worker_nodes" {
-  description = "Nummber of worker nodes to create"
+  description = "Number of worker nodes to create"
   type        = number
   default     = 0
 }
@@ -545,12 +545,12 @@ variable "vm_datastore_id" {
 }
 
 variable "talos_version" {
-  description = "Version of Talos Linux being deploy, for naming purposes"
+  description = "Version of Talos Linux being deployed, for naming purposes"
   type        = string
 }
 
 variable "talos_image_url" {
-  description = "Download link of the image file, not iso of Talos Linux"
+  description = "Download link of the image file, not the ISO of Talos Linux"
   type        = string
 }
 
@@ -570,7 +570,7 @@ variable "dns_servers" {
 }
 
 variable "control_nodes" {
-  description = "Nummber of control nodes to create"
+  description = "Number of control nodes to create"
   type        = number
   default     = 0
 }
@@ -599,7 +599,7 @@ variable "control_nodes_ipv4_prefix" {
 }
 
 variable "worker_nodes" {
-  description = "Nummber of worker nodes to create"
+  description = "Number of worker nodes to create"
   type        = number
   default     = 0
 }
@@ -754,7 +754,7 @@ variable "cluster_name" {
 }
 
 variable "worker_nodes" {
-  description = "Nummber of worker nodes to create"
+  description = "Number of worker nodes to create"
   type        = number
   default     = 0
 }
@@ -765,7 +765,7 @@ variable "worker_nodes_ipv4_prefix" {
 }
 
 variable "control_nodes" {
-  description = "Nummber of control nodes to create"
+  description = "Number of control nodes to create"
   type        = number
   default     = 0
 }

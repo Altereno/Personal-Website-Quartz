@@ -2,10 +2,10 @@ This is part 2 of [[Homelab Plans - Summer 2025]]
 # Introduction
 To access the services that I want to host, I need to understand networking (and storage?) in Kubernetes...
 ## Plan
-- Setup the Cilium CNI
-- Setup the bare metal load balancer
+- Set up the Cilium CNI
+- Set up the bare metal load balancer
 - Deploy a test site with certificates from [cert-manager](https://cert-manager.io/)
-- Setup the Longhorn CSI?
+- Set up the Longhorn CSI?
 ## Notes
 - Since I am running a bare metal cluster, I will need to provide my own load balancer
 - Cilium has support for a bare metal load balancer, but will need extra configuration
@@ -75,7 +75,7 @@ k8sClientRateLimit:
   burst: 40
 ```
 
-AFAIK, the two ways to expose a service externally in Kubernetes is either by using a [`NodePort`](https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport) or by using a [`LoadBalancer`](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer). The `NodePort` should open a port on all the nodes, and route the traffic internally to the pod, while the `LoadBalancer` should give me a single point of entry and route it to the pod.
+AFAIK, the two ways to expose a service externally in Kubernetes are either by using a [`NodePort`](https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport) or by using a [`LoadBalancer`](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer). The `NodePort` should open a port on all the nodes, and route the traffic internally to the pod, while the `LoadBalancer` should give me a single point of entry and route it to the pod.
 
 For a bare metal load balancer, there seems to be two ways to achieve a stable IP address:
 - L2 ARP
@@ -120,7 +120,7 @@ spec:
   - cidr: "10.0.10.224/28"
 ```
 
-The first block specifies the L2 announcement policy. From the example, it excludes the control plane nodes from the ARP process, and uses regex to match on all network interfaces that are enumerated with the `eth` prefix. The first second creates the pool that the load balance can use, which we can verify by running `kubectl get ippools`. 
+The first block specifies the L2 announcement policy. From the example, it excludes the control plane nodes from the ARP process, and uses regex to match on all network interfaces that are enumerated with the `eth` prefix. The second creates the pool that the load balancer can use, which we can verify by running `kubectl get ippools`.  
 ## Testing
 In my current lab, I have an internal reverse proxy that terminates all the TLS. I wanted to be able to replicate this with this new cluster.
 ### Installing cert-manager
@@ -142,7 +142,7 @@ helm upgrade --install \
 *I have added the extra options from [here](https://cert-manager.io/docs/usage/gateway/) to get support for Gateway API CRDs*
 
 ### Configuring the ClusterIssuer
-I am using the [ACME issuer](https://cert-manager.io/docs/configuration/acme/). List of issuer can be found [here](https://cert-manager.io/docs/configuration/issuers/).
+I am using the [ACME issuer](https://cert-manager.io/docs/configuration/acme/). A list of issuers can be found [here](https://cert-manager.io/docs/configuration/issuers/).
 
 I will be using the `DNS01` challenge instead of `HTTP01`, which will require ACME to have access to my DNS provider. I am using Cloudflare currently.
 
@@ -205,7 +205,7 @@ spec:
 
 Notes:
 - I commented out the staging server in place for the production one, for testing purposes it is recommended to use staging before prod to prevent running into rate limits.
-- I used a `ClusterIssuer` instead of an `Issuer` because Issuers are tied down their namespace (I think)
+- I used a `ClusterIssuer` instead of an `Issuer` because Issuers are tied to their namespace (I think)
 - The docs use `apiKeySecretRef`, which won't work. I had to replace it with `apiTokenSecretRef`. [Github Issue](https://github.com/cert-manager/cert-manager/issues/2384#issuecomment-575301692).
 
 ### Whoami
@@ -433,7 +433,7 @@ spec:
 ```
 This should allow me to create an `HTTPRoute` for all my apps. Note that the namespace that the `HTTPRoute` is in needs to have the `shared-gateway-access` label set to `true`. I found this [here](https://gateway-api.sigs.k8s.io/guides/multiple-ns/#shared-gateway).
 ### Hubble
-To expose the Hubble web ui, I used this `HTTPRoute`:
+To expose the Hubble web UI, I used this `HTTPRoute`:
 ```sh
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

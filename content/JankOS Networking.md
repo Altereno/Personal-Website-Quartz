@@ -2,7 +2,7 @@ The `1,000,000x` developer [Andrew Li](https://github.com/Andwerpz) has written 
 # Groundwork
 Developing code for the operating system has been significantly improved since I last worked on it. This made my life very easy. Mr. Li has already implemented everything I needed to start on this networking driver. You can reference his writeup to see what he has done. [JankOS](https://andwerpz.github.io/html/blogs/jank_os/jank_os.html)
 
-For networking, I created some structs that will com in handy later.
+For networking, I created some structs that will come in handy later.
 ```c
 struct NetInterface {
     u8* name;
@@ -24,7 +24,7 @@ struct NetInterface {
 }
 ```
 # Objective
-The goal was for me to write a somewhat functional network stack for user mode programs. The loose order of steps were to:
+The goal was for me to write a somewhat functional network stack for user mode programs. The loose order of steps was to:
 1. Write the driver for the specific NIC (network interface card)
 2. Implement the protocols as needed
 To be more precise, I needed to implement these protocols for bare minimum:
@@ -39,17 +39,17 @@ These other protocols were added in either for testing or to get more functional
 # NIC Driver
 Initially, I was only going to support the Intel e1000 network card, since it was well documented and QEMU was able to virtualize it. I later went and wrote the driver for the Realtek RTL8111 drivers to test on my old laptop.
 ## e1000
-I mainly reference the [OSDev Wiki](https://wiki.osdev.org/Intel_Ethernet_i217) and the [Intel Developer Manual](https://github.com/Andwerpz/jank-os/blob/c5f149dec534e623c10d0e0166a5ee318cf38efd/docs/e1000.pdf). 
+I mainly referenced the [OSDev Wiki](https://wiki.osdev.org/Intel_Ethernet_i217) and the [Intel Developer Manual](https://github.com/Andwerpz/jank-os/blob/c5f149dec534e623c10d0e0166a5ee318cf38efd/docs/e1000.pdf). 
 *Note: The OSDev code has both Memory Mapped IO (MMIO) and Port Mapped IO (PMIO) in their examples. I chose to just use MMIO.*
 **Since I am using DMA and MMIO, I needed to make sure that the memory is set to uncacheable when mapping it*
 ### Basic Initialization
 #### PCI
-After detecting the card in ACPI, I had to setup the PCI configuration for the card. This composed of the following steps:
+After detecting the card in ACPI, I had to set up the PCI configuration for the card. This consisted of the following steps:
 1. Detecting the Base Address Register (BAR) type and memory mapping it.
 2. Toggling certain features in the PCI command register:
 	1. Bus Mastering for Direct Memory Access (DMA)
 	2. Memory Access Enable to signal that its memory mapped
-3. Setup interrupts:
+3. Set up interrupts:
 	1. Grab the Interrupt Request (IRQ) line from the PCI header
 	2. Calculate the interrupt vector (We used an offset of 30)
 #### EPROM
@@ -77,9 +77,9 @@ From the PCI setup earlier, I should have the calculated interrupt vector from t
 	1. Enable Link Status Change
 	2. Enable Receive Timer Interrupt
 
-*Note: I have only enable two interrupt causes since I just wanted bare minimum functionality, all I wanted to know is when the link state changes (physical ethernet is plugged in and negotiated vs unplugged) and when a frame is received by the hardware.*
+*Note: I have only enabled two interrupt causes since I just wanted bare minimum functionality, all I wanted to know is when the link state changes (physical ethernet is plugged in and negotiated vs unplugged) and when a frame is received by the hardware.*
 ### Interrupt Handler
-The interrupt handle only checks for 2 things:
+The interrupt handler only checks for 2 things:
 1. Link state
 	1. If it is down, reset the DHCP configuration
 	2. If it is up, check if DHCP is configured, if not, send a DHCP Discover out
@@ -202,7 +202,7 @@ Since I used the APIC for the interrupts, I was able to set a constant interrupt
 	1. Enable Link Change Interrupt (`LinkChg`)
 	2. Enable Rx OK Interrupt (`ROK`)
 ### Interrupt Handler
-The interrupt handle only checks for 2 things:
+The interrupt handler only checks for 2 things:
 1. Link state
 	1. If it is down, reset the DHCP configuration
 	2. If it is up, check if DHCP is configured, if not, send a DHCP Discover out

@@ -1,7 +1,7 @@
 # Goals
 - Create virtual machines with a defined purpose, instead of one virtual machine for all docker services. This isolates problems when a container or virtual machine becomes unresponsive.
-- Move all internal services from using ISCSI to NFS
-- Move Jellyfin to a docker container, I noticed that I only direct play media, I'm going to replace the Jellyfin LXC container with the GPU permissions with a docker container.
+- Move all internal services from using iSCSI to NFS
+- Move Jellyfin to a docker container, I noticed that I only direct-play media, I'm going to replace the Jellyfin LXC container with the GPU permissions with a docker container.
 - Move all documentation to Obsidian, replacing BookStack
 ## Creating multiple virtual machines
 Previously, I had 2 virtual machines for Docker containers: one for internal and one for external services. The main reason why I split them up is to prevent a single container from locking up all the other services. 
@@ -81,7 +81,7 @@ Then I went ahead and updated the repository and packages:
 
 ```
 
-And then installing 2 things, the QEMU guest agent and Docker
+And then I installed two things: the QEMU guest agent and Docker
 
 ```yaml
 - name: Install qemu guest agent
@@ -164,7 +164,7 @@ I previously used an iSCSI LUN mapped to each docker host to store all my persis
 ### Permissions
 #### TrueNAS Dataset ACLs
 Information referenced from the [ACL Primer from iXSystems](https://www.truenas.com/docs/references/aclprimer/#acl-overview). 
-I decided with the NFSv4 type ACLs since I do have windows workstations and I wanted the support for the finer grain permissions. I believe that the FreeBSD based TrueNAS Core was also using it for permissions, so I was just more familiar.
+I decided on NFSv4 ACLs since I do have windows workstations and I wanted the support for the finer grain permissions. I believe that the FreeBSD based TrueNAS Core was also using it for permissions, so I was just more familiar.
 
 ### Mounting volumes for docker
 Previously, I had the docker host mount a CIFS share at boot using fstab and then using local bindmounts to give containers access to the media. I wanted to change this to having the NFS mount inside the container. While I could write an Ansible playbook to setup the local mounts, I'd rather have all the container information in one place, which is inside the compose file. 
@@ -176,10 +176,10 @@ With the ACLs on TrueNAS set up, I noted down the UID of each user and mapped th
 ### Quirks with persistent data
 While I could set up a SQL server for all the different applications, I thought it was easier to have each container just use their own SQLite instance. The main issue I had with a SQLite DB on a network share is the occasional errors in the DB due to locking. This wasn't actually a problem when I had the persistent data stored on the iSCSI device since the allocation of a LUN to a VM would grant only that VM access to the block level device. 
 
-I made the change to just move all persistent data to the local VM and have Proxmox take weekly snapshots and send it to TrueNAS. This decouples my storage server to my compute. Some examples as to why this was better for me:
+I made the change to just move all persistent data to the local VM and have Proxmox take weekly snapshots and send it to TrueNAS. This decouples my storage server from my compute. Some examples as to why this was better for me:
 - If I had to do maintenance on my storage server
 - When NUT shutdowns my servers I don't have to worry about the storage server shutting down before my compute
 - Applications that required indexing of a large quantity of smaller files such as Shoko and Jellyfin was noticeably faster 
 
-~~I also noticed that while the Syncthing user had complete access through ACLS to the NFS share I mounted, it won't sync unless the Syncthing user is the owner of the files. While I could change the ACLs on TrueNAS to have Syncthing own it and give full permissions to me, I just did a bandaid fix by using CIFS with the noperm flag to bypass all permission checks. (lol)~~
-I found out that just had the wrong user and group ID set, the permissions were correct.
+~~I also noticed that while the Syncthing user had complete access through ACLs to the NFS share I mounted, it won't sync unless the Syncthing user is the owner of the files. While I could change the ACLs on TrueNAS to have Syncthing own it and give full permissions to me, I just did a bandaid fix by using CIFS with the noperm flag to bypass all permission checks. (lol)~~
+I found out that I just had the wrong user and group ID set; the permissions were correct.

@@ -274,4 +274,4 @@ spec:
       port: 3000
 ```
 
-With Gitea up, I mirrored my repositories from Github.
+With Gitea up, I mirrored my repositories from GitHub.
