@@ -8,7 +8,7 @@ OPNsense version as of now (May 10th, 2026) is: `OPNsense 26.1.7_3-amd64`
 This [video](https://www.youtube.com/watch?v=Yb7JdIFriKI) by [apalrdsadventures](https://www.youtube.com/@apalrdsadventures) is great, it covers all the basic setup for OPNsense.
 *There are also other videos from this channel that cover IPv6*
 # OPNsense Setup
-**This assumes that the general setup wizard has already been ran**
+**This assumes that the general setup wizard has already been run**
 ## DHCPv4
 Dnsmasq DNS & DHCP is the default, but coming from PfSense, I was using Kea. 
 
@@ -24,7 +24,7 @@ Unbound is enabled by default but I needed to add DNS servers.
 - Under `Services -> Unbound DNS -> DNS over TLS`:
 	- `Server IP`: `1.1.1.1`
 	- `Verify CN`: `one.one.one.one`
-*Note that I'm just using Cloudflare's DoT for this, other providers such as Quad 9 will work.*
+*Note that I'm just using Cloudflare's DoT for this; other providers such as Quad 9 will work.*
 ## Overrides
 Under `Services -> Unbound DNS -> Overrides`, I just copied all the previous host overrides that I had on PfSense.
 ## NUT
@@ -118,6 +118,8 @@ Under `System -> Services -> Dynamic DNS -> General Settings`:
 - Check the `Enable` box
 ## WireGuard
 WireGuard in OPNsense actually has a nicer QoL compared to PfSense. It has a QR code generator that allows me to quickly add mobile peers.
+
+The following configurations are based heavily on the examples found on the [official OPNsense documention](https://docs.opnsense.org/manual/vpnet.html#wireguard)
 ### "Road Warrior" Setup
 #### Tunnel
 Under `VPN -> WireGuard -> Instances`:
@@ -186,14 +188,16 @@ PersistentKeepalive = 25
 Under `VPN -> WireGuard -> Instances`:
 *This is filled in using information from the `Interface` section of the configuration file*
 - Create a new instance:
-	- Toggle the `advanced mode`
 	- Check the `Enable` box
 	- Give it a `Name`
 	- Copy the `Private key` over (*Filling in the `Public key` is optional but to generate the public key from the private key run this: `printf "<PRIVATEKEYHERE>" | wg pubkey`*)
 	- Copy over the `MTU`
-	- Copy over the `DNS servers`
-	- Copy over the `Tunnel Address`
+	- Leave the `DNS servers` empty
+	- Copy over the `Tunnel Address` (*Note Below*)
 	- Check the `Disable routes` box
+	- Toggle the `advanced mode`
+	- Set the `Gateway` to one below the assigned IPv4 address (*This seems to be arbitrary, just needs to not conflict with another address*)
+*For the tunnel addresses, fill in the `/32` route for IPv4, but use a `/127` for IPv6. This is because there is no concept of a `Far Gateway` for IPv6, thus the gateway address will need to be within the same subnet configured in the tunnel. Using a subnet calculator will show the gateway address for later. As an example, from the configuration posted above, the gateways would be `10.11.12.12` and `fd00:1234:1234:1234:1234:1234:1234:1235`*
 #### Peers
 *This is filled in using information from the `Peer` section of the configuration file*
 Under `VPN -> Wireguard -> Peers`:
@@ -209,6 +213,7 @@ Under `VPN -> Wireguard -> Peers`:
 Under `Interfaces -> Assignments`:
 - Assign the new WireGuard interface
 - Enable the newly assigned interface (*Nothing else needs to be changed here. There is no need to set the IPv4 and IPv6 `Configuration Type`, it has already been set when the tunnel was created.*)
+- Set the `MTU` and `MSS` to match the WireGuard tunnel created earlier
 #### Gateway
 Under `System -> Gateways -> Configuration`:
 - Create a new Gateway
@@ -216,8 +221,8 @@ Under `System -> Gateways -> Configuration`:
 - Select the `Interface` we just created
 - Select the `Address Family` (*In the end there should be 2 gateways, one for each address family*)
 - Set a `Priority` (*I just set it to max (255), no reason behind it*)
-- Set the `IP Address` (*This one is determined by the VPN provider, mine says that the DNS servers are the same as the gateway*)
-- Check the `Far Gateway` box
+- Set the `IP Address` (*For IPv4 it will be the one configured in the WireGuard tunnel earlier, and for IPv6, it would be the gateway address from the `/127`*)
+- Check the `Far Gateway` box (*Only for IPv4*)
 #### Outbound NAT
 This will create the NAT44 and the NAT66 for the VPN. Since it is NAT, it is stateful and will translate the addresses between the two networks.
 Under `Firewall -> NAT -> Outbound`:
@@ -232,6 +237,7 @@ Under `Firewall -> NAT -> Outbound`:
 - Leave `Destination invert` unchecked
 - Set the `Destination address` to `any`
 - Set the `Destination port` to `any`
+- Set the `Translation / target` to `Interface address`
 #### PBR (Policy Based Routing)
 This will force specific clients to use the VPN gateway instead of the WAN gateway.
 Under `Firewall -> Rules`:
@@ -307,6 +313,8 @@ For IPv6, under `Firewall -> Aliases`:
 - Use the `MAC Address` `Type`
 - Fill in the MAC addresses of the hosts that need to be routed though the VPN under `Content`
 *Note: For IPv6, the `Host(s)` `Type` would not work because the GUA prefix can change, thus bypassing the firewall rules created earlier.*
+#### DNS Leaks
+To prevent DNS leaks, I just manually configured a public DNS server on the client.
 ## IPv6 (For real this time)
 *Below reflects my current understanding of IPv6 and networking, it may or may not be correct!*
 ### Notes
