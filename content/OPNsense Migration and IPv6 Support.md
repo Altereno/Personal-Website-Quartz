@@ -134,7 +134,7 @@ Under `Interfaces -> Assignments`:
 #### Peers
 Under `VPN -> Wireguard -> Peer Generator`:
 - Set the `Instance` to the one that was just created
-- Leave ` Endpoint` blank as this will be dynamic (*Not a Site-to-Site* VPN)
+- Leave `Endpoint` blank as this will be dynamic (*Not a Site-to-Site* VPN)
 - Give a friendly `Name` for the peer
 - Set the static `Address` for the peer (*This will be the IP that the peer will use inside the network that was created for the Tunnel*)
 - Generate a `Pre-shared key`
@@ -155,7 +155,7 @@ Under `Interfaces -> Devices -> Loopback`:
 Under `Interfaces -> Assignments`:
 - Assign the new "dummy" interface
 - Enable the interface
-- Set `IPv6 Configuration Type` to `Track Interface (legacy)`
+- Set `IPv6 Configuration Type` to `Identity association`
 - Set the `Parent interface` to `WAN`
 - Set the `Assign prefix ID` to a valid prefix
 Under `Firewall -> NAT -> NPTv6`:
@@ -163,7 +163,7 @@ Under `Firewall -> NAT -> NPTv6`:
 - Set the `Interface` to `WAN`
 - Set the `Internal IPv6 Prefix` to the IPv6 network of the tunnel (*`fd00:a12b:3c4d:5e6f::/64` from earlier*)
 - Leave the `External IPv6 Prefix` blank to auto-detect
-- Set the `Track interface` to the "dummy" interface from earlier
+- Set the `Identity association` to the "dummy" interface from earlier
 
 **If this was set up correctly, IPv6 connectivity should be working when using the VPN**
 ### External VPN Provider
@@ -182,11 +182,136 @@ Endpoint = vpn.bello.internal
 AllowedIPs = 0.0.0.0/0,::/0
 PersistentKeepalive = 25
 ```
-
+#### Tunnel
+Under `VPN -> WireGuard -> Instances`:
+*This is filled in using information from the `Interface` section of the configuration file*
+- Create a new instance:
+	- Toggle the `advanced mode`
+	- Check the `Enable` box
+	- Give it a `Name`
+	- Copy the `Private key` over (*Filling in the `Public key` is optional but to generate the public key from the private key run this: `printf "<PRIVATEKEYHERE>" | wg pubkey`*)
+	- Copy over the `MTU`
+	- Copy over the `DNS servers`
+	- Copy over the `Tunnel Address`
+	- Check the `Disable routes` box
+#### Peers
+*This is filled in using information from the `Peer` section of the configuration file*
+Under `VPN -> Wireguard -> Peers`:
+- Give it a `Name`
+- Copy over the `Public key`
+- Copy over the `Pre-shared key`
+- Copy over the `Allowed IPs`
+- Copy over the `Endpoint address`
+- Copy over the `Endpoint port`
+- Set the `Instances` to the one we just created
+- Copy over the `Keepalive interval`
+#### Interface
+Under `Interfaces -> Assignments`:
+- Assign the new WireGuard interface
+- Enable the newly assigned interface (*Nothing else needs to be changed here. There is no need to set the IPv4 and IPv6 `Configuration Type`, it has already been set when the tunnel was created.*)
+#### Gateway
+Under `System -> Gateways -> Configuration`:
+- Create a new Gateway
+- Give it a `Name`
+- Select the `Interface` we just created
+- Select the `Address Family` (*In the end there should be 2 gateways, one for each address family*)
+- Set a `Priority` (*I just set it to max (255), no reason behind it*)
+- Set the `IP Address` (*This one is determined by the VPN provider, mine says that the DNS servers are the same as the gateway*)
+- Check the `Far Gateway` box
+#### Outbound NAT
+This will create the NAT44 and the NAT66 for the VPN. Since it is NAT, it is stateful and will translate the addresses between the two networks.
+Under `Firewall -> NAT -> Outbound`:
+- Change the mode to `Hybrid outbound NAT rule generation`
+- Add a manual rule
+- Select the `Interface` we just created
+- Set the `TCP/IP Version` (*In the end there should be 2 gateways, one for each address family*)
+- Set the `Protocol` to `any`
+- Leave `Source invert` unchecked
+- Set the `Source address` to the clients that will be routed through the VPN (*I have an alias for this*)
+- Set the `Source port` to `any`
+- Leave `Destination invert` unchecked
+- Set the `Destination address` to `any`
+- Set the `Destination port` to `any`
+#### PBR (Policy Based Routing)
+This will force specific clients to use the VPN gateway instead of the WAN gateway.
+Under `Firewall -> Rules`:
+- Create a rule
+- Check the `Enabled` box
+- Leave `Invert Interface` unchecked
+- Select the `Interface` that the client lives on
+- Check the `Quick` box
+- Select `Pass` for `Action`
+- Select `In` for `Direction`
+- Set the `Version` (*This rule will be created twice, one for IPv4 and one for IPv6*)
+- Set `Protocol` to `any`
+- Leave `Invert Source` unchecked
+- Set the `Source` to the clients that will be routed through the VPN (*I have an alias for this*)
+- Set the `Source Port` to `any`
+- Check the `Invert Destination` box
+- Set the `Destination` to either RFC 1918 or RFC 4193 depending on the IP family
+- Set the `Destination port` to `any`
+- Set the `Gateway` to the corresponding one based on the IP family
+- Toggle `advanced mode` switch
+- Set `Set local tag` to a custom tag (*I just used 'NO_WAN_EGRESS', although this could be anything. This will be used later to do the kill switch.*)
+#### Kill Switch
+This will block all attempts of the client trying to reach the internet through WAN.
+Under `Firewall -> Rules`:
+- Create a rule
+- Check the `Enabled` box
+- Leave `Invert Interface` unchecked
+- Select the `WAN` for the `Interface`
+- Check the `Quick` box
+- Select `Block` for `Action`
+- Select `Out` for `Direction`
+- Set the `Version` to `IPv4+IPv6`
+- Set `Protocol` to `any`
+- Leave `Invert Source` unchecked
+- Set the `Source` to `any`
+- Set the `Source Port` to `any`
+- Leave `Invert Destination` unchecked
+- Set the `Destination` to `any`
+- Set the `Destination port` to `any`
+- Toggle `advanced mode` switch
+- Set `Match local tag` to a custom tag created earlier
+#### Port Forwarding
+This assumes the VPN provider supports port forwarding.
+Under `Firewall -> Rules`:
+- Create a rule
+- Check the `Enabled` box
+- Leave `Invert Interface` unchecked
+- Select the `Interface` that matches the VPN provider tunnel
+- Check the `Quick` box
+- Select `Pass` for `Action`
+- Select `In` for `Direction`
+- Set the `Version` (*This rule will be created twice, one for IPv4 and one for IPv6*)
+- Set `Protocol` to support the client application that is being port forwarded
+- Leave `Invert Source` unchecked
+- Set the `Source` to `any`
+- Set the `Source Port` to `any`
+- Leave `Invert Destination` unchecked
+- Set the `Destination` to client IP 
+- Set the `Destination port` to client port
+- Toggle `advanced mode` switch
+- Set `Reply-to` to the correct gateway depending on the IP family
+#### Aliases
+For IPv4, under `Firewall -> Aliases`:
+- Create an alias
+- Check the `Enabled` box
+- Give it a `Name`
+- Use the `Host(s)` `Type`
+- Fill in the hosts that need to be routed though the VPN under `Content`
+For IPv6, under `Firewall -> Aliases`:
+- Create an alias
+- Check the `Enabled` box
+- Give it a `Name`
+- Use the `MAC Address` `Type`
+- Fill in the MAC addresses of the hosts that need to be routed though the VPN under `Content`
+*Note: For IPv6, the `Host(s)` `Type` would not work because the GUA prefix can change, thus bypassing the firewall rules created earlier.*
 ## IPv6 (For real this time)
 *Below reflects my current understanding of IPv6 and networking, it may or may not be correct!*
-
+### Notes
 From some research and talking with the big G(emini), some general notes I have of IPv6:
+#### Address Types
 For unicast, there are 3 types of addresses:
 - Global Unicast Address (GUA)
 	- Prefix `2000::/3`
@@ -199,6 +324,8 @@ For unicast, there are 3 types of addresses:
 	- Local subnet only, routers will not route these
 	- Assigned to each network interface
 
+When a host attempts to send traffic to a destination, it will use the address that is scoped closest to the destination address. So if it wanted to reach a GUA, it would use its GUA to communicate.
+#### IPv4 Parallels (kind of)
 ICMPv6 now takes care of these:
 - ARP - through Neighbor Solicitation and Neighbor Advertisement
 - DHCP - through Router Advertisements (RA)
@@ -207,12 +334,62 @@ DHCPv6 is a thing, however some operating systems don't support it because SLAAC
 - DHCPv6 will function basically the same as DHCPv4, allowing the server to assign the client addresses in a pool
 - SLAAC is done client side, where the client takes the prefix information from the RA and generates their own address
 *This is turbo annoying because I wanted to manage static addresses from OPNsense, just like I already do with IPv4. More on this later...*
+#### IPv6 PD (Prefix Delegation)
+When an ISP assigns an IPv6 block to a customer, it will usually be either a `/48`, `/56` block from what I've seen online. In my case, the ISP have provided a `/56` block, which means that the first 56 bits of the IPv6 address will be "static" (in the sense that I won't be able to modify the first 56 bits, but they can change if the ISP reallocates another block for me) and I will have $2^{128-56}$ addresses to work with. (*This is important for subnetting IPv6*)
+#### Router Advertisements
+There are different types of router advertisements:
+- `Unmanaged` (*A flag*)
+- `Managed` (*M flag*)
+- `Assisted` (*M+O+A flags*)
+- `Stateless` (*O+A flags*)
+And to break down the flags:
+- `M` - Managed
+	- Tells client device that a DHCPv6 server is running on the network, and the client should contact the DHCPv6 server in order to get an IP address
+- `O` - Other
+	- Tells client device that a DHCPv6 server is running on the network, and the client can request additional information such as the DNS server from it.
+- `A` - Autonomous
+	- Tells the client that they should take in the advertised `/64` prefix, and generate their own address using SLAAC
+#### OPNsense Related
+Another thing to note: PfSense seems to only have the `Track Interface` for  `IPv6 Configuration Type`, which is known as `Track Interface (Legacy)` on OPNsense. However, OPNsense has the option of `Identity association` which seem to work the same (?)
 ### Enabling on Interface
 Assuming that the ISP has already assigned a prefix, enabling IPv6 on an interface is pretty straightforward:
-- 
+- Under `Interfaces -> [$INTERFACE]`:
+	- Set `IPv6 Configuration Type` to `Identity association`
+	- Under `IPv6 Identity Association`:
+		- Set the `Parent interface` to `WAN`
+		- Set the `Assign prefix ID` to a valid hex value (*Note below*)
+*SLAAC requires at least a `/64` block to work. If the ISP assigns a `/56` prefix, we will have $2^{64-56}$ subnets to hand out internally, which `0x00` to `0xff` covers.*
+- Under `Services -> Router Advertisements`:
+	- Create an entry
+	- Check the `Enabled` box
+	- Select the `Interface`
+	- Select a `Mode` (*I will be using `Stateless`(SLAAC)* for everything)
+	- Under `DNS Settings`:
+		- Set `Recursive DNS Servers (RDNSS)` to the ULA VIP address for the interface (*Refer to [[OPNsense Migration and IPv6 Support#ULAs]]*)
+### ULAs
+To advertise a ULA prefix on a subnet:
+Under `Interfaces -> Virtual IPs -> Settings`:
+- Create a VIP
+- Select the `IP Alias` mode
+- Select the `Interface`
+- Enter a `Network / Address` (*Use `/64` and `::1`, example: `fd00:1125:5232:2312::1/64`*)
+- Set a `Description`
+### Proxmox
+To configure Proxmox to use SLAAC, append the following to `/etc/network/interfaces`:
+```
+iface vmbr0 inet6 auto
+        accept_ra 2
+```
+- `auto` for SLAAC
+- `accept_ra` to accept router advertisements 
+### TrueNAS
+Circling back to the SLAAC vs DHCPv6, I have discovered that TrueNAS does not support DHCPv6. My original idea was to have a DHCPv6 server running on OPNsense, then have it hand out reserved addresses just like how I am currently doing with IPv4.
 
-# WIP NOTES
-TrueNAS Setup
-Does not support dhcpv6
-could use assisted but i dont like having it split so use slaac/unmanaged for everything
-Proxmox Setup
+Since DHCPv6 is not supported on TrueNAS, I could have a hybrid setup where I have both SLAAC and DHCPv6 running. If that were the case, I could the `Assisted` mode for RAs. However, I didn't want to wrangle with reservations on OPNsense, and also setting setting static IPs on the hosts that don't support DHCPv6.
+
+In the end I ended up just using `Unmanaged` (SLAAC) for everything. Since SLAAC is based off the MAC address, and all the hosts don't have any SLAAC privacy extensions enabled by default.
+*Note: The IPv6 SLAAC privacy extensions uses random bits instead of the MAC address*
+
+To configure TrueNAS to use SLAAC, check the `Autoconfigure IPv6` box under `Network -> Interfaces -> [$INTERFACE]`
+### Docker Hosts
+**TODO**
