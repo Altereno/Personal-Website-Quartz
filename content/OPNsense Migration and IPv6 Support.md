@@ -382,7 +382,8 @@ Under `Interfaces -> Virtual IPs -> Settings`:
 - Select the `Interface`
 - Enter a `Network / Address` (*Use `/64` and `::1`, example: `fd00:1125:5232:2312::1/64`*)
 - Set a `Description`
-### Proxmox
+# IPv6 Hosts
+## Proxmox
 To configure Proxmox to use SLAAC, append the following to `/etc/network/interfaces`:
 ```
 iface vmbr0 inet6 auto
@@ -390,7 +391,7 @@ iface vmbr0 inet6 auto
 ```
 - `auto` for SLAAC
 - `accept_ra` to accept router advertisements 
-### TrueNAS
+## TrueNAS
 Circling back to the SLAAC vs DHCPv6, I have discovered that TrueNAS does not support DHCPv6. My original idea was to have a DHCPv6 server running on OPNsense, then have it hand out reserved addresses just like how I am currently doing with IPv4.
 
 Since DHCPv6 is not supported on TrueNAS, I could have a hybrid setup where I have both SLAAC and DHCPv6 running. If that were the case, I could the `Assisted` mode for RAs. However, I didn't want to wrangle with reservations on OPNsense, and also setting setting static IPs on the hosts that don't support DHCPv6.
@@ -399,5 +400,22 @@ In the end I ended up just using `Unmanaged` (SLAAC) for everything. Since SLAAC
 *Note: The IPv6 SLAAC privacy extensions uses random bits instead of the MAC address*
 
 To configure TrueNAS to use SLAAC, check the `Autoconfigure IPv6` box under `Network -> Interfaces -> [$INTERFACE]`
-### Docker Hosts
-**TODO**
+## Docker
+After doing some research, I think I have these options to support IPv6 on my home services:
+- Enable IPv6 on the Docker daemon, then give it a ULA block which resolves using a static route. I would be able to access each application via their IPv4 port mapping or with their IPv6 ULA.
+- Use host networking mode. This would remove all the port mappings and have everything run directly on the host addresses.
+- Use Macvlan or IPvlan. This would become its own device on the network, having its own address.
+- Use port mapping and bind it to the ULA (*`[fd00::1]:8080:80`*). This would be the most like the current IPv4 setup.
+- Keep the IPv4 backend and only enable IPv6 on the reverse proxy. This would require the least configuration.
+There are probably more ways to enable IPv6 connectivity, some being "better" than the others.
+
+In my case, I'll choose to keep my IPv4 backend and enable IPv6 on my reverse proxy.
+To keep it brief, here is what I had to do:
+- Enable IPv6 in Docker
+- Update the alias for the reverse proxy to include both IPs
+- Update the rules to support dual stack
+- Update the allow list on the reverse proxy
+# Closing Notes
+- IPv4 is ingrained into me, I love NAT (YAY!)
+- IPv6 Is probably nicer to set up if I were to start my infrastructure from scratch (Future project?)
+- I think Dual Stack has a place, however internal communication should just choose to use either IPv4 or IPv6, and only the edge should have support for both protocols.
