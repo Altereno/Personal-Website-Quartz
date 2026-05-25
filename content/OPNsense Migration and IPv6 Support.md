@@ -382,6 +382,29 @@ Under `Interfaces -> Virtual IPs -> Settings`:
 - Select the `Interface`
 - Enter a `Network / Address` (*Use `/64` and `::1`, example: `fd00:1125:5232:2312::1/64`*)
 - Set a `Description`
+### Interface Isolation
+Previously with IPv4, I would have a rule that passes the current interface network to NOT the RFC 1918. This was done with the invert destination and a network alias.
+
+With IPv6, I thought it would be the same thing, so I blocked all ULA and LL addresses. However, this does not cover the GUA of the hosts, thus breaking the isolation between interfaces.
+
+To remedy this, I created a new network alias that contained all the local addresses along with all the other networks. So something like this:
+```
+__lan_network
+__opt1_network
+__opt2_network
+__opt3_network
+__wireguard_network
+10.0.0.0/8
+172.16.0.0/12
+192.168.0.0/16
+fc00::/7
+fe80::/10
+127.0.0.0/8
+::1/128
+```
+*Note: the `__` prefixed networks are predefined in OPNsense, they should be at the bottom of the alias list, you don't have to create them.*
+
+Finally, for the firewall rule, I just changed the existing allow rule to support both IPv4 and IPv6 and changed the target alias to the one that was just created. With this, I can delete the rule for IPv4 and IPv6 and coalesce them into one.
 # IPv6 Hosts
 ## Proxmox
 To configure Proxmox to use SLAAC, append the following to `/etc/network/interfaces`:
