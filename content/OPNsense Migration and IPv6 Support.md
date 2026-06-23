@@ -411,9 +411,11 @@ To configure Proxmox to use SLAAC, append the following to `/etc/network/interfa
 ```
 iface vmbr0 inet6 auto
         accept_ra 2
+        dhcp 0
 ```
 - `auto` for SLAAC
 - `accept_ra` to accept router advertisements 
+- `dhcp 0` to disable the DHCP6 client
 ## TrueNAS
 Circling back to the SLAAC vs DHCPv6, I have discovered that TrueNAS does not support DHCPv6. My original idea was to have a DHCPv6 server running on OPNsense, then have it hand out reserved addresses just like how I am currently doing with IPv4.
 
