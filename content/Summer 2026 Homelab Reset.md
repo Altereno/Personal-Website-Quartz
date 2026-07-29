@@ -450,7 +450,11 @@ servers:
 Most of my apps run off Docker. All the compose files are stored in a repository so I don't have to manage the files directly.
 I moved from [Portainer](https://www.portainer.io/) to [Dockhand](https://dockhand.pro/) to manage all the containers. The Dockhand compose file creates a proxy network that lets me only expose the reverse proxy. This network comes with an IPv4 and IPv6 subnet, which I needed to allowlist in the reverse proxy to allow [Gatus](https://gatus.io/) to query its targets.
 ## Pelican
-Previously I installed Pelican following [[Pelican Panel Installation]]. However, I realized I could run the Pelican web panel inside Docker, which saves a lot of work. I set it up with the recommended defaults inside the Docker compose stack. The container also needed to run as UID 82 for file permissions for the internal user (there doesn't seem to be a way to configure the user inside the image.
+Previously I installed Pelican following [[Pelican Panel Installation]]. However, I realized I could run the Pelican web panel inside Docker, which saves a lot of work. I set it up with the recommended defaults inside the Docker compose stack. 
+
+I set both the panel and the Wings node to be behind a reverse proxy. This made it easier since I didn't have to set up Certbot like I did in [[Pelican Panel Installation]].
+
+The container also needed to run as UID 82 for file permissions for the internal user (there doesn't seem to be a way to configure the user inside the image.
 ## Syncthing
 Had to remove the old certificate and chown the data directory to the correct user to match what I configured on TrueNAS.
 ## Media
