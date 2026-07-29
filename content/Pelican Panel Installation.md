@@ -1,3 +1,6 @@
+# Updates
+- I have moved from Ubuntu to Debian
+- Added some missing information
 # Background
 Here is the progression of the game panels I've used:
 - MineOS (Unable to find link D:)
@@ -13,18 +16,19 @@ I am running Ubuntu 24.04 on a virtual machine.
 [Source](https://pelican.dev/docs/panel/getting-started)
 
 ### Dependencies
+[PHP](https://www.php.net/downloads.php?os=linux&osvariant=linux-debian&version=8.5)
 Recommended version for `PHP` is 8.5, that is what I will install:
 ```bash
-sudo apt install PHP8.5-gd PHP8.5-mysql PHP8.5-mbstring PHP8.5-bcmath PHP8.5-xml PHP8.5-curl PHP8.5-zip PHP8.5-intl PHP8.5-sqlite3 PHP8.5-fpm
+sudo apt install --no-install-recommends PHP8.5-gd PHP8.5-mysql PHP8.5-mbstring PHP8.5-bcmath PHP8.5-xml PHP8.5-curl PHP8.5-zip PHP8.5-intl PHP8.5-sqlite3 PHP8.5-fpm
 ```
 
-*This will install `Apache2`, but I am using Nginx, so I just removed it:*
+~~*This will install `Apache2`, but I am using Nginx, so I just removed it:*~~
 ```bash
 sudo systemctl stop apache2
 sudo apt remove apache2*
 sudo apt-get autoremove
 ```
-I believe there is a way to install only what is listed, I think I just needed this flag: `--no-install-recommends`
+~~I believe there is a way to install only what is listed, I think I just needed this flag: `--no-install-recommends`~~
 
 Make the directory and clone:
 ```sh
@@ -54,6 +58,7 @@ To have certificates auto renew, I will use [Certbot](https://certbot.eff.org/).
 
 To install Certbot and the [Cloudflare plugin](https://certbot-dns-cloudflare.readthedocs.io/en/stable/):
 ```bash
+sudo apt install snapd
 sudo snap install --classic certbot
 sudo snap install certbot-dns-cloudflare
 ```
@@ -95,7 +100,7 @@ renew_hook = systemctl reload nginx
 ### Nginx
 [Source](https://nginx.org/en/linux_packages.html#Ubuntu)
 
-To install Nginx:
+To install Nginx (*Use the source linked above to install it for the correct Linux distribution*):
 ```bash
 sudo apt install curl gnupg2 ca-certificates lsb-release ubuntu-keyring
 curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
@@ -135,7 +140,7 @@ server {
     server_name <domain>;
 
     root /var/www/pelican/public;
-    index index.PHP;
+    index index.php;
 
     access_log /var/log/nginx/pelican.app-access.log;
     error_log  /var/log/nginx/pelican.app-error.log error;
@@ -163,13 +168,13 @@ server {
     add_header Referrer-Policy same-origin;
 
     location / {
-        try_files $uri $uri/ /index.PHP?$query_string;
+        try_files $uri $uri/ /index.php?$query_string;
     }
 
     location ~ \.PHP$ {
-        fastcgi_split_path_info ^(.+\.PHP)(/.+)$;
-        fastcgi_pass unix:/run/PHP/PHP8.5-fpm.sock;
-        fastcgi_index index.PHP;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_pass unix:/run/php/php8.5-fpm.sock;
+        fastcgi_index index.php;
         include fastcgi_params;
         fastcgi_param PHP_VALUE "upload_max_filesize = 100M \n post_max_size=100M";
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
@@ -202,6 +207,7 @@ sudo systemctl restart nginx
 Create the `.env`
 ```bash
 cp .env.example .env
+sudo php artisan p:environment:setup
 ```
 
 Update the URL of the panel inside the `.env` file:
@@ -209,13 +215,6 @@ Update the URL of the panel inside the `.env` file:
 APP_URL=https://pelican.stevenchen.one
 ```
 Also save the APP_KEY somewhere.
-
-Set up the environment: 
-```bash
-sudo php artisan p:environment:setup
-```
-
-
 
 Set permissions for the panel and webserver:
 ```bash
@@ -238,9 +237,13 @@ sudo php /var/www/pelican/artisan p:environment:queue-service --overwrite
 
 Add the cron job for schedules using `crontab -u www-data -e`:
 ```
-* * * * * PHP /var/www/pelican/artisan schedule:run >> /dev/null 2>&1
+* * * * * php /var/www/pelican/artisan schedule:run >> /dev/null 2>&1
 ```
 
+Run this to create the administrator account:
+```sh
+php artisan p:user:make
+```
 # Wings
 [Source](https://pelican.dev/docs/wings/install)
 
