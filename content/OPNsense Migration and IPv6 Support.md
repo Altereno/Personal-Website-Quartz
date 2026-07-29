@@ -416,6 +416,11 @@ iface vmbr0 inet6 auto
 - `auto` for SLAAC
 - `accept_ra` to accept router advertisements 
 - `dhcp 0` to disable the DHCP6 client
+*Note: I had to disable IPv6 on another interface since it seemed to create a gateway metric tie?*
+```
+iface vmbr1 inet6 manual
+		accept_ra 0
+```
 ## TrueNAS
 Circling back to the SLAAC vs DHCPv6, I have discovered that TrueNAS does not support DHCPv6. My original idea was to have a DHCPv6 server running on OPNsense, then have it hand out reserved addresses just like how I am currently doing with IPv4.
 
