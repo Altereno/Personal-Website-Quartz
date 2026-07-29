@@ -452,6 +452,6 @@ I moved from [Portainer](https://www.portainer.io/) to [Dockhand](https://dockha
 ## Pelican
 Previously I installed Pelican following [[Pelican Panel Installation]]. However, I realized I could run the Pelican web panel inside Docker, which saves a lot of work. I set it up with the recommended defaults inside the Docker compose stack. The container also needed to run as UID 82 for file permissions for the internal user (there doesn't seem to be a way to configure the user inside the image.
 ## Syncthing
-Had to remove the old certificate and chown the data directory to the correct user.
+Had to remove the old certificate and chown the data directory to the correct user to match what I configured on TrueNAS.
 ## Media
-Just chown everything to the correct user.
+Just chown everything to the correct user to match what I configured on TrueNAS.
