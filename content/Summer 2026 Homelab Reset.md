@@ -21,6 +21,17 @@ This machine will run all my Docker Compose services on a Debian cloud VM, and e
 - I moved to a static IPv4 and IPv6 address instead of the old DHCP reservation and SLAAC.
 - Mounting the VM backups and ISOs over NFSv4.2.
 - Mounting all persistent VM disks over iSCSI.
+### Backups
+LXC backups use a user namespace. During the backup, container root (UID 0) is mapped to UID 100000 on the Proxmox host.
+If the NFS backup destination doesn't permit UID 100000 to write, it will cause a `Permission denied` error when backing up LXC.
+Note that VM backups to the same NFS storage will work because VM backups don't use the same LXC user-namespace mapping.
+#### Solution 1: Configuring Temporary Directory
+The workaround is to configure Proxmox to use a local temporary directory, such as `/tmp`, in `/etc/vzdump.conf` by setting:
+```
+tmpdir: /tmp
+```
+#### Solution 2: Settings Mapall User/Group
+The less secure solution would be to set the Mapall user and group to root, meaning that all connections from Proxmox to TrueNAS over NFS will be as the root user.
 ## Peanut
 This is my main storage. It is running [TrueNAS Scale](https://www.truenas.com/docs/).
 The machine is the [SuperServer 6029P-TRT](https://www.supermicro.com/en/products/system/2u/6029/sys-6029p-trt.php).
@@ -105,6 +116,7 @@ Some reasoning behind this:
 - Single point of contact, which means no more tracking multiple IPs and reservations for Docker containers.
 - Persistent storage is uncoupled from compute, allowing quick service spin-up and VM upgrades.
 - Fewer VMs to manage.
+*Note: The default behavior when backing up VMs that have a iSCSI disks is to also include the entire disk, disable it by editing the disk from the GUI and unchecking backup after ticking advanced. (Look into crash consistent vs application consistent backups)*
 ## VM Templates
 I used [this resource](https://www.apalrd.net/posts/2023/pve_cloud/) for creating Debian cloud image templates on Proxmox.
 The Cloud-Init configuration is very basic and I chose to use Ansible for post-provisioning instead of creating custom Cloud-Init snippets in [Proxmox's Cloud-Init](https://pve.proxmox.com/wiki/Cloud-Init_Support).
